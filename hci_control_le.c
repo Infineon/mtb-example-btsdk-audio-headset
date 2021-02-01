@@ -1,10 +1,10 @@
 /*
- * Copyright 2016-2020, Cypress Semiconductor Corporation or a subsidiary of
- * Cypress Semiconductor Corporation. All Rights Reserved.
+ * Copyright 2016-2021, Cypress Semiconductor Corporation (an Infineon company) or
+ * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
  * This software, including source code, documentation and related
- * materials ("Software"), is owned by Cypress Semiconductor Corporation
- * or one of its subsidiaries ("Cypress") and is protected by and subject to
+ * materials ("Software") is owned by Cypress Semiconductor Corporation
+ * or one of its affiliates ("Cypress") and is protected by and subject to
  * worldwide patent protection (United States and foreign),
  * United States copyright laws and international treaty provisions.
  * Therefore, you may use this Software only as provided in the license
@@ -13,7 +13,7 @@
  * If no EULA applies, Cypress hereby grants you a personal, non-exclusive,
  * non-transferable license to copy, modify, and compile the Software
  * source code solely for use in connection with Cypress's
- * integrated circuit products. Any reproduction, modification, translation,
+ * integrated circuit products.  Any reproduction, modification, translation,
  * compilation, or representation of this Software except as specified
  * above is prohibited without the express written permission of Cypress.
  *
@@ -152,6 +152,7 @@ typedef struct t_hci_control_le_pending_tx_buffer_t
 } hci_control_le_pending_tx_buffer_t;
 
 wiced_timer_t hci_control_le_connect_timer;
+extern const  wiced_bt_cfg_settings_t wiced_bt_cfg_settings;
 
 /******************************************************
  *               Variables Definitions
@@ -207,7 +208,7 @@ const uint8_t gatt_server_db[]=
              * for bonded devices.  Setting value to 1 tells this application to send notification
              * when value of the characteristic changes.  Value 2 is to allow indications. */
             CHAR_DESCRIPTOR_UUID16_WRITABLE( HANDLE_HSENS_SERVICE_CHAR_CFG_DESC, GATT_UUID_CHAR_CLIENT_CONFIG,
-                LEGATTDB_PERM_READABLE | LEGATTDB_PERM_WRITE_REQ),
+                LEGATTDB_PERM_READABLE | LEGATTDB_PERM_WRITE_REQ | LEGATTDB_PERM_AUTH_READABLE | LEGATTDB_PERM_AUTH_WRITABLE),
 
         /* Declare characteristic Hello Configuration */
         CHARACTERISTIC_UUID128_WRITABLE( HANDLE_HSENS_SERVICE_CHAR_BLINK, HANDLE_HSENS_SERVICE_CHAR_BLINK_VAL,
@@ -305,8 +306,33 @@ void hci_control_le_enable( void )
 
     WICED_BT_TRACE("wiced_bt_gatt_db_init %d\n", gatt_status);
 
+    hci_control_le_set_advertisement_data();
+
     /* Initialize connection timer */
     wiced_init_timer( &hci_control_le_connect_timer, &hci_control_le_connect_timeout, 0, WICED_SECONDS_TIMER );
+}
+
+
+/*
+ * hci_control_le_set_advertisement_data
+ */
+static void hci_control_le_set_advertisement_data(void)
+{
+    wiced_bt_ble_advert_elem_t adv_elem[3];
+    uint8_t num_elem = 0;
+    uint8_t flag = BTM_BLE_GENERAL_DISCOVERABLE_FLAG | BTM_BLE_BREDR_NOT_SUPPORTED;
+
+    adv_elem[num_elem].advert_type = BTM_BLE_ADVERT_TYPE_FLAG;
+    adv_elem[num_elem].len = sizeof(uint8_t);
+    adv_elem[num_elem].p_data = &flag;
+    num_elem++;
+
+    adv_elem[num_elem].advert_type = BTM_BLE_ADVERT_TYPE_NAME_COMPLETE;
+    adv_elem[num_elem].len = (uint16_t)strlen((char *)wiced_bt_cfg_settings.device_name);
+    adv_elem[num_elem].p_data = (uint8_t *)wiced_bt_cfg_settings.device_name;
+    num_elem++;
+
+    wiced_bt_ble_set_raw_advertisement_data(num_elem, adv_elem);
 }
 
 /*
@@ -332,6 +358,7 @@ wiced_result_t hci_control_le_connection_up( wiced_bt_gatt_connection_status_t *
 {
     uint32_t       conn_id = p_status->conn_id;
     uint8_t        role;
+    wiced_bt_ble_sec_action_type_t  encryption_type;
 
     wiced_bt_dev_get_role( p_status->bd_addr, &role, p_status->transport);
     le_control_cb.conn[conn_id].role = role;
@@ -349,9 +376,19 @@ wiced_result_t hci_control_le_connection_up( wiced_bt_gatt_connection_status_t *
     // if we connected as a master configure slave to enable notifications
     if ( role == HCI_ROLE_MASTER )
     {
-        wiced_result_t res = wiced_bt_dev_sec_bond( p_status->bd_addr, p_status->addr_type,
-                p_status->transport, 0, NULL );
-        WICED_BT_TRACE( "master role: after bond res:%d\n", res );
+        wiced_result_t res;
+        if ((hci_control_find_nvram_id(p_status->bd_addr, BD_ADDR_LEN)) == 0)
+        {
+            res = wiced_bt_dev_sec_bond(p_status->bd_addr, p_status->addr_type,
+                p_status->transport, 0, NULL);
+            WICED_BT_TRACE("master role: after bond res:%d\n", res);
+        }
+        else // device already paired previous. Just do encryption
+        {
+            encryption_type = BTM_BLE_SEC_ENCRYPT;
+            res = wiced_bt_dev_set_encryption(p_status->bd_addr, p_status->transport, &encryption_type);
+            WICED_BT_TRACE("master role: after encrypt res:%d\n", res);
+        }
     }
     else
     {
