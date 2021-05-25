@@ -131,7 +131,7 @@ typedef struct
     uint16_t          conn_id;              // Connection ID used for exchange with the stack
     uint16_t          peer_mtu;             // MTU received in the MTU request (or 23 if peer did not send MTU request)
 
-    uint8_t           role;                 // HCI_ROLE_MASTER or HCI_ROLE_SLAVE
+    uint8_t           role;                 // HCI_ROLE_CENTRAL or HCI_ROLE_PERIPHERAL
 } hci_control_le_conn_state_t;
 
 typedef struct
@@ -373,29 +373,29 @@ wiced_result_t hci_control_le_connection_up( wiced_bt_gatt_connection_status_t *
     le_control_cb.conn[conn_id].conn_id    = p_status->conn_id;
     le_control_cb.conn[conn_id].peer_mtu   = GATT_DEF_BLE_MTU_SIZE;
 
-    // if we connected as a master configure slave to enable notifications
-    if ( role == HCI_ROLE_MASTER )
+    // if we connected as a central configure peripheral to enable notifications
+    if ( role == HCI_ROLE_CENTRAL )
     {
         wiced_result_t res;
         if ((hci_control_find_nvram_id(p_status->bd_addr, BD_ADDR_LEN)) == 0)
         {
             res = wiced_bt_dev_sec_bond(p_status->bd_addr, p_status->addr_type,
                 p_status->transport, 0, NULL);
-            WICED_BT_TRACE("master role: after bond res:%d\n", res);
+            WICED_BT_TRACE("Central Role: after bond res:%d\n", res);
         }
         else // device already paired previous. Just do encryption
         {
             encryption_type = BTM_BLE_SEC_ENCRYPT;
             res = wiced_bt_dev_set_encryption(p_status->bd_addr, p_status->transport, &encryption_type);
-            WICED_BT_TRACE("master role: after encrypt res:%d\n", res);
+            WICED_BT_TRACE("Central Role: after encrypt res:%d\n", res);
         }
     }
     else
     {
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-        // ask master to set preferred connection parameters
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+        // ask central to set preferred connection parameters
         wiced_bt_l2cap_update_ble_conn_params( p_status->bd_addr, 36, 72, 0, 200 );
-        le_slave_connection_up(p_status);
+        le_peripheral_connection_up(p_status);
 #endif
     }
 
@@ -425,10 +425,10 @@ wiced_result_t hci_control_le_connection_down( wiced_bt_gatt_connection_status_t
         hci_control_le_pending_tx_buffer.tx_buf_saved = WICED_FALSE;
     }
 
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-    if (le_control_cb.conn[conn_id].role != HCI_ROLE_MASTER)
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+    if (le_control_cb.conn[conn_id].role != HCI_ROLE_CENTRAL)
     {
-        le_slave_connection_down(p_status);
+        le_peripheral_connection_down(p_status);
     }
 #endif
 
@@ -777,27 +777,27 @@ wiced_bt_gatt_status_t hci_control_le_gatt_callback( wiced_bt_gatt_evt_t event, 
         break;
 
     case GATT_OPERATION_CPLT_EVT:
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-        if (le_control_cb.conn[p_data->operation_complete.conn_id].role == HCI_ROLE_SLAVE)
-            result = le_slave_gatt_operation_complete(&p_data->operation_complete);
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+        if (le_control_cb.conn[p_data->operation_complete.conn_id].role == HCI_ROLE_PERIPHERAL)
+            result = le_peripheral_gatt_operation_complete(&p_data->operation_complete);
         else
 #endif
             result = hci_control_le_gatt_operation_comp_cb( &p_data->operation_complete );
         break;
 
     case GATT_DISCOVERY_RESULT_EVT:
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-        if (le_control_cb.conn[p_data->discovery_result.conn_id].role == HCI_ROLE_SLAVE)
-            result = le_slave_gatt_discovery_result( &p_data->discovery_result );
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+        if (le_control_cb.conn[p_data->discovery_result.conn_id].role == HCI_ROLE_PERIPHERAL)
+            result = le_peripheral_gatt_discovery_result( &p_data->discovery_result );
         else
 #endif
             result = hci_control_le_gatt_disc_result_cb( &p_data->discovery_result );
         break;
 
     case GATT_DISCOVERY_CPLT_EVT:
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-        if (le_control_cb.conn[p_data->discovery_complete.conn_id].role == HCI_ROLE_SLAVE)
-            result = le_slave_gatt_discovery_complete( &p_data->discovery_complete );
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+        if (le_control_cb.conn[p_data->discovery_complete.conn_id].role == HCI_ROLE_PERIPHERAL)
+            result = le_peripheral_gatt_discovery_complete( &p_data->discovery_complete );
         else
 #endif
             result = hci_control_le_gatt_disc_comp_cb( &p_data->discovery_complete );
@@ -1304,10 +1304,10 @@ void hci_control_le_handle_service_discovery( uint16_t conn_id, uint16_t s_handl
         WICED_BT_TRACE( "illegal handles:%04x-%04x\n", s_handle, e_handle );
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS, HCI_CONTROL_STATUS_INVALID_ARGS );
     }
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_MASTER)
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_CENTRAL)
     {
-        WICED_BT_TRACE( "GATT Command not allowed for Slave Connection\n");
+        WICED_BT_TRACE( "GATT Command not allowed for Peripheral Connection\n");
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS,
                 HCI_CONTROL_STATUS_DISALLOWED );
     }
@@ -1356,10 +1356,10 @@ void hci_control_le_handle_characteristic_discovery( uint16_t conn_id, uint16_t 
         WICED_BT_TRACE( "illegal handles:%04x-%04x\n", s_handle, e_handle );
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS, HCI_CONTROL_STATUS_INVALID_ARGS );
     }
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_MASTER)
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_CENTRAL)
     {
-        WICED_BT_TRACE( "GATT Command not allowed for Slave Connection\n");
+        WICED_BT_TRACE( "GATT Command not allowed for Peripheral Connection\n");
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS,
                 HCI_CONTROL_STATUS_DISALLOWED );
     }
@@ -1407,10 +1407,10 @@ void hci_control_le_handle_descriptor_discovery( uint16_t conn_id, uint16_t s_ha
         WICED_BT_TRACE( "illegal handles:%04x-%04x\n", s_handle, e_handle );
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS, HCI_CONTROL_STATUS_INVALID_ARGS );
     }
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_MASTER)
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_CENTRAL)
     {
-        WICED_BT_TRACE( "GATT Command not allowed for Slave Connection\n");
+        WICED_BT_TRACE( "GATT Command not allowed for Peripheral Connection\n");
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS,
                 HCI_CONTROL_STATUS_DISALLOWED );
     }
@@ -1454,10 +1454,10 @@ void hci_control_le_handle_read_req( uint16_t conn_id, uint16_t handle )
         WICED_BT_TRACE( "illegal handle:%04x\n", handle );
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS, HCI_CONTROL_STATUS_INVALID_ARGS );
     }
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_MASTER)
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_CENTRAL)
     {
-        WICED_BT_TRACE( "GATT Command not allowed for Slave Connection\n");
+        WICED_BT_TRACE( "GATT Command not allowed for Peripheral Connection\n");
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS,
                 HCI_CONTROL_STATUS_DISALLOWED );
     }
@@ -1498,10 +1498,10 @@ void hci_control_le_handle_write_response( uint16_t conn_id, uint16_t handle, ui
         WICED_BT_TRACE( "illegal conn_id:%04x\n", conn_id );
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS, HCI_CONTROL_STATUS_BAD_HANDLE );
     }
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_MASTER)
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_CENTRAL)
     {
-        WICED_BT_TRACE( "GATT Command not allowed for Slave Connection\n");
+        WICED_BT_TRACE( "GATT Command not allowed for Peripheral Connection\n");
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS,
                 HCI_CONTROL_STATUS_DISALLOWED );
     }
@@ -1532,10 +1532,10 @@ void hci_control_le_handle_read_rsp( uint16_t conn_id, uint16_t handle, uint8_t 
         WICED_BT_TRACE( "illegal conn_id:%04x\n", conn_id );
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS, HCI_CONTROL_STATUS_BAD_HANDLE );
     }
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_MASTER)
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_CENTRAL)
     {
-        WICED_BT_TRACE( "GATT Command not allowed for Slave Connection\n");
+        WICED_BT_TRACE( "GATT Command not allowed for Peripheral Connection\n");
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS,
                 HCI_CONTROL_STATUS_DISALLOWED );
     }
@@ -1576,10 +1576,10 @@ wiced_bool_t hci_control_le_handle_write_cmd( uint16_t conn_id, uint16_t handle,
         WICED_BT_TRACE( "illegal handle:%04x\n", handle );
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS, HCI_CONTROL_STATUS_INVALID_ARGS );
     }
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_MASTER)
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_CENTRAL)
     {
-        WICED_BT_TRACE( "GATT Command not allowed for Slave Connection\n");
+        WICED_BT_TRACE( "GATT Command not allowed for Peripheral Connection\n");
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS,
                 HCI_CONTROL_STATUS_DISALLOWED );
     }
@@ -1647,10 +1647,10 @@ void hci_control_le_handle_write_req( uint16_t conn_id, uint16_t handle, uint8_t
         WICED_BT_TRACE( "illegal handle:%04x\n", handle );
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS, HCI_CONTROL_STATUS_INVALID_ARGS );
     }
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
-    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_MASTER)
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
+    else if (le_control_cb.conn[conn_id].role != HCI_ROLE_CENTRAL)
     {
-        WICED_BT_TRACE( "GATT Command not allowed for Slave Connection\n");
+        WICED_BT_TRACE( "GATT Command not allowed for Peripheral Connection\n");
         hci_control_send_command_status_evt( HCI_CONTROL_GATT_EVENT_COMMAND_STATUS,
                 HCI_CONTROL_STATUS_DISALLOWED );
     }

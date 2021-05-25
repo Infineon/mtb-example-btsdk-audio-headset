@@ -667,9 +667,9 @@ wiced_result_t hci_control_management_callback( wiced_bt_management_evt_t event,
 
             WICED_BT_TRACE( "Encryption Status:(%B) res:%d\n", p_encryption_status->bd_addr, p_encryption_status->result );
 
-#if (WICED_APP_LE_SLAVE_CLIENT_INCLUDED == TRUE)
+#if (WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED == TRUE)
             if (p_encryption_status->transport == BT_TRANSPORT_LE)
-                le_slave_encryption_status_changed(p_encryption_status);
+                le_peripheral_encryption_status_changed(p_encryption_status);
 #endif
             hci_control_send_encryption_changed_evt( p_encryption_status->result, p_encryption_status->bd_addr );
             break;

@@ -449,7 +449,7 @@ void a2dp_sink_control_cback( wiced_bt_a2dp_sink_event_t event,  wiced_bt_a2dp_s
         case WICED_BT_A2DP_SINK_CONNECT_EVT:      /**< Connected event, received on establishing connection to a peer device. Ready to stream. */
             if (p_data->connect.result == WICED_SUCCESS)
             {
-                uint16_t settings = HCI_ENABLE_MASTER_SLAVE_SWITCH;// HCI_DISABLE_ALL_LM_MODES;
+                uint16_t settings = HCI_ENABLE_ROLE_SWITCH;// HCI_DISABLE_ALL_LM_MODES;
 
                 idx = get_index_from_address(p_data->connect.bd_addr);
                 if( idx >= MAX_NUM_OF_SIMULTANEOUS_A2DP_CONNECTIONS)

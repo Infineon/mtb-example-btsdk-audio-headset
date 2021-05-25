@@ -48,7 +48,7 @@ extern const uint8_t pincode[WICED_PIN_CODE_LEN];
 
 /* BLE Profiles/Applications */
 #define WICED_APP_LE_INCLUDED               TRUE
-#define WICED_APP_LE_SLAVE_CLIENT_INCLUDED  FALSE
+#define WICED_APP_LE_PERIPHERAL_CLIENT_INCLUDED  FALSE
 #define WICED_APP_ANCS_INCLUDED             FALSE
 #define WICED_APP_TEST_INCLUDED             FALSE
 
