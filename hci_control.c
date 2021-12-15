@@ -460,7 +460,7 @@ void headset_write_eir( char* headset_device_name, uint8_t name_length  )
     UINT8_TO_STREAM(p, 0x00);
 
     // print EIR data
-    wiced_bt_trace_array( "EIR :", ( uint8_t* )( pBuf+1 ), MIN( p-( uint8_t* )pBuf,100 ) );
+    WICED_BT_TRACE_ARRAY( ( uint8_t* )( pBuf+1 ), MIN( p-( uint8_t* )pBuf,100 ), "EIR :" );
     if(wiced_bt_dev_write_eir( pBuf, (uint16_t)(p - pBuf) ) != WICED_SUCCESS)
         WICED_BT_TRACE("dev_write_eir failed\n");
 

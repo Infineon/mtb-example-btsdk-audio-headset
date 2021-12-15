@@ -285,7 +285,6 @@ extern void         hci_control_ams_handle_command(uint16_t opcode, uint8_t *p_d
 extern void           app_avrc_init(void);
 extern void           wiced_bt_rc_target_register(void);
 extern void           hci_control_hf_at_command (uint16_t handle, uint8_t command, int num, uint8_t* p_data);
-extern void           wiced_bt_trace_array( const char *string, const uint8_t* array, const uint16_t len );
 extern wiced_result_t headset_a2dp_init (void);
 extern void           headset_remote_control_init( void );
 extern void           handsfree_hfp_init(void);
