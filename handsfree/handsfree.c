@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022, Cypress Semiconductor Corporation (an Infineon company) or
+ * Copyright 2016-2023, Cypress Semiconductor Corporation (an Infineon company) or
  * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
  * This software, including source code, documentation and related
@@ -532,7 +532,7 @@ static void handsfree_event_callback( wiced_bt_hfp_hf_event_t event, wiced_bt_hf
             p_val.val.num = p_data->clip.type;
             BCM_STRNCPY_S( p_val.val.str, sizeof( p_val.str ), p_data->clip.caller_num, sizeof( p_val.val.str ) );
             res = HCI_CONTROL_HF_AT_EVENT_BASE + HCI_CONTROL_HF_AT_EVENT_CLIP;
-            WICED_BT_TRACE("%s: CLIP - number %s, type %d\n", __func__, p_data->clip.caller_num, p_data->clip.type);
+            WICED_BT_TRACE("%s: CLIP - number %s, type %d alpha %s\n", __func__, p_data->clip.caller_num, p_data->clip.type, p_data->clip.caller_name);
             break;
 
         case WICED_BT_HFP_HF_VOLUME_CHANGE_EVT:

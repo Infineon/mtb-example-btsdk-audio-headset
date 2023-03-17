@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022, Cypress Semiconductor Corporation (an Infineon company) or
+ * Copyright 2016-2023, Cypress Semiconductor Corporation (an Infineon company) or
  * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
  * This software, including source code, documentation and related
@@ -35,8 +35,8 @@
  * Headset Sample Application for 20706A2 devices.
  * The sample app performs as a Bluetooth A2DP sink and AVRCP Controller (and Target for absolute volume control).
  * Features demonstrated
- *  - WICED BT AV (A2DP/AVRCP) APIs
- *  - WICED BT GATT APIs
+ *  - WICED Bluetooth AV (A2DP/AVRCP) APIs
+ *  - WICED Bluetooth GATT APIs
  *  - Handling of the UART WICED protocol
  *  - SDP and GATT descriptor/attribute configuration
  *
@@ -637,7 +637,7 @@ wiced_result_t hci_control_management_callback( wiced_bt_management_evt_t event,
             break;
 
         case BTM_PAIRING_IO_CAPABILITIES_BLE_REQUEST_EVT:
-            /* Use the default security for BLE */
+            /* Use the default security for LE */
             WICED_BT_TRACE("BTM_PAIRING_IO_CAPABILITIES_BLE_REQUEST_EVT bda %B\n",
                     p_event_data->pairing_io_capabilities_ble_request.bd_addr);
             p_event_data->pairing_io_capabilities_ble_request.local_io_cap  = BTM_IO_CAPABILITIES_NONE;
