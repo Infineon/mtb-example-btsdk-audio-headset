@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023, Cypress Semiconductor Corporation (an Infineon company) or
+ * Copyright 2016-2024, Cypress Semiconductor Corporation (an Infineon company) or
  * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
  *
  * This software, including source code, documentation and related
@@ -42,6 +42,20 @@
 #include "wiced_bt_trace.h"
 #include "hci_control_api.h"
 #include "hci_control.h"
+
+#if defined(CYW20706A2)
+#include "wiced_memory_pre_init.h"
+WICED_MEM_PRE_INIT_CONTROL g_mem_pre_init = {
+    .scanRssiThresholdDeviceListSize = 8,
+    .lm_cmdQueueAreaSize = WICED_MEM_PRE_INIT_IGNORE,
+    .aclDownBufSize = WICED_MEM_PRE_INIT_IGNORE,
+    .aclUpBufSize = WICED_MEM_PRE_INIT_IGNORE,
+    .aclDownCount = 4, //(unsigned char)WICED_MEM_PRE_INIT_IGNORE,
+    .aclUpCount = 4, //(unsigned char)WICED_MEM_PRE_INIT_IGNORE,
+    .rmulpMaxLLConnection = 4, //(unsigned char)WICED_MEM_PRE_INIT_IGNORE,
+    .ulp_rl_maxSize = 8, //(unsigned char)WICED_MEM_PRE_INIT_IGNORE,
+};
+#endif
 
 /*
  *  Application Start, ie, entry point to the application.
